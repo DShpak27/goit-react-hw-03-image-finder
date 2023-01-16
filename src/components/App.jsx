@@ -57,43 +57,41 @@ export default class App extends Component {
             });
         }
         this.setState({ status: 'pending' });
-        setTimeout(() => {
-            searchService.currentQuery = query;
-            searchService.pageNumber = 1;
-            searchService
-                .fetchImages()
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(response.status);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.hits.length === 0) {
-                        this.setState({
-                            data: data.hits,
-                            totalFound: data.total,
-                            page: 1,
-                            query: query,
-                            status: 'nothing found',
-                        });
-                    } else {
-                        this.setState({
-                            data: data.hits,
-                            totalFound: data.total,
-                            page: 1,
-                            query: query,
-                            status: 'resolved',
-                        });
-                    }
-                })
-                .catch(error => {
+        searchService.currentQuery = query;
+        searchService.pageNumber = 1;
+        searchService
+            .fetchImages()
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.hits.length === 0) {
                     this.setState({
-                        status: 'error',
-                        onErrorMessage: error.message,
+                        data: data.hits,
+                        totalFound: data.total,
+                        page: 1,
+                        query: query,
+                        status: 'nothing found',
                     });
+                } else {
+                    this.setState({
+                        data: data.hits,
+                        totalFound: data.total,
+                        page: 1,
+                        query: query,
+                        status: 'resolved',
+                    });
+                }
+            })
+            .catch(error => {
+                this.setState({
+                    status: 'error',
+                    onErrorMessage: error.message,
                 });
-        }, 300);
+            });
     };
 
     handleButtonLoadMore = () => {
@@ -112,33 +110,31 @@ export default class App extends Component {
         }
 
         this.setState({ status: 'pending' });
-        setTimeout(() => {
-            searchService.currentQuery = this.state.query;
-            searchService.pageNumber = this.state.page + 1;
-            searchService
-                .fetchImages()
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(response.status);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    return this.setState(prevState => {
-                        return {
-                            data: data.hits,
-                            page: prevState.page + 1,
-                            status: 'resolved',
-                        };
-                    });
-                })
-                .catch(error => {
-                    this.setState({
-                        status: 'error',
-                        onErrorMessage: error.message,
-                    });
+        searchService.currentQuery = this.state.query;
+        searchService.pageNumber = this.state.page + 1;
+        searchService
+            .fetchImages()
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                return this.setState(prevState => {
+                    return {
+                        data: [...prevState.data, ...data.hits],
+                        page: prevState.page + 1,
+                        status: 'resolved',
+                    };
                 });
-        }, 300);
+            })
+            .catch(error => {
+                this.setState({
+                    status: 'error',
+                    onErrorMessage: error.message,
+                });
+            });
     };
 
     handleGalleryImageClick = idx => {
@@ -155,88 +151,88 @@ export default class App extends Component {
 
     render() {
         const { status } = this.state;
-        if (status === 'idle') {
-            return (
-                <div className={css.App}>
-                    <Searchbar
-                        initialValue={this.state.query}
-                        onSubmit={this.handleButtonSubmit}
-                        onResetButton={this.handleResetBtn}
-                    />
-                </div>
-            );
-        }
 
-        if (status === 'pending') {
-            return (
-                <div className={css.App}>
-                    <Searchbar
-                        initialValue={this.state.query}
-                        onSubmit={this.handleButtonSubmit}
-                        onResetButton={this.handleResetBtn}
-                    />
-                    <Loader />
-                </div>
-            );
-        }
-
-        if (status === 'resolved') {
-            return (
-                <div className={css.App}>
-                    <Searchbar
-                        initialValue={this.state.query}
-                        onSubmit={this.handleButtonSubmit}
-                        onResetButton={this.handleResetBtn}
-                    />
-                    <ImageGallery
-                        imageSet={this.state.data}
-                        onImageClick={this.handleGalleryImageClick}
-                    />
-                    <Button onBtnClick={this.handleButtonLoadMore}>
-                        Load more
-                    </Button>
-                    {this.state.showModal && (
-                        <Modal
-                            imageToShow={
-                                this.state.data[this.state.chosenImageIndex]
-                            }
-                            onEscBtn={this.closeModal}
-                            onOverlayClick={this.closeModal}
+        switch (status) {
+            case 'pending':
+                return (
+                    <div className={css.App}>
+                        <Searchbar
+                            initialValue={this.state.query}
+                            onSubmit={this.handleButtonSubmit}
+                            onResetButton={this.handleResetBtn}
                         />
-                    )}
-                </div>
-            );
-        }
-
-        if (status === 'nothing found') {
-            return (
-                <div className={css.App}>
-                    <Searchbar
-                        initialValue={this.state.query}
-                        onSubmit={this.handleButtonSubmit}
-                        onResetButton={this.handleResetBtn}
-                    />
-                    <div className={css.notification}>
-                        <span>Sorry! But nothing found for your request!</span>
-                        <span>Try change the requested word.</span>
+                        <Loader />
                     </div>
-                </div>
-            );
-        }
+                );
 
-        if (status === 'error') {
-            return (
-                <div className={css.App}>
-                    <Searchbar
-                        initialValue={this.state.query}
-                        onSubmit={this.handleButtonSubmit}
-                        onResetButton={this.handleResetBtn}
-                    />
-                    <div className={css.notification}>
-                        <span>{this.state.onErrorMessage}</span>
+            case 'resolved':
+                return (
+                    <div className={css.App}>
+                        <Searchbar
+                            initialValue={this.state.query}
+                            onSubmit={this.handleButtonSubmit}
+                            onResetButton={this.handleResetBtn}
+                        />
+                        <ImageGallery
+                            imageSet={this.state.data}
+                            onImageClick={this.handleGalleryImageClick}
+                        />
+                        <Button onBtnClick={this.handleButtonLoadMore}>
+                            Load more
+                        </Button>
+                        {this.state.showModal && (
+                            <Modal
+                                imageToShow={
+                                    this.state.data[this.state.chosenImageIndex]
+                                }
+                                onEscBtn={this.closeModal}
+                                onOverlayClick={this.closeModal}
+                            />
+                        )}
                     </div>
-                </div>
-            );
+                );
+
+            case 'nothing found':
+                return (
+                    <div className={css.App}>
+                        <Searchbar
+                            initialValue={this.state.query}
+                            onSubmit={this.handleButtonSubmit}
+                            onResetButton={this.handleResetBtn}
+                        />
+                        <div className={css.notification}>
+                            <span>
+                                Sorry! But nothing found for your request!
+                            </span>
+                            <span>Try change the requested word.</span>
+                        </div>
+                    </div>
+                );
+
+            case 'error':
+                return (
+                    <div className={css.App}>
+                        <Searchbar
+                            initialValue={this.state.query}
+                            onSubmit={this.handleButtonSubmit}
+                            onResetButton={this.handleResetBtn}
+                        />
+                        <div className={css.notification}>
+                            <span>{this.state.onErrorMessage}</span>
+                        </div>
+                    </div>
+                );
+
+            default:
+                return (
+                    <div className={css.App}>
+                        <Searchbar
+                            initialValue={this.state.query}
+                            onSubmit={this.handleButtonSubmit}
+                            onResetButton={this.handleResetBtn}
+                        />
+                    </div>
+                );
         }
     }
 }
